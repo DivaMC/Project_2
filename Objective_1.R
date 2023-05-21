@@ -47,6 +47,8 @@ COVID_dataSum <-
   lastday_confirmed %>% inner_join(lastday_deaths, by=c("Province.State", "Country.Region", "Lat", "Long")) %>%
   mutate(All_Latest = rowSums(across(c(Latest_Day.x, Latest_Day.y)))) %>%
   rename("Last_Confirm"="Latest_Day.x", "Last_Deaths"="Latest_Day.y") 
+  
+COVID_dataSum <- COVID_dataSum[-c(54, 90, 245, 286),]
 
 #Create dataframe which averages lats and longs, and adds confirmations and deaths.
 COVID_dataSum_country <- 
@@ -54,11 +56,21 @@ COVID_dataSum_country <-
   summarize(mean(Lat), mean(Long), sum(Last_Confirm), sum(Last_Deaths), sum(All_Latest)) %>%
   rename("lat"="mean(Lat)", "long"="mean(Long)", "Confirmations"="sum(Last_Confirm)", "Deaths"="sum(Last_Deaths)", "All"="sum(All_Latest)")
 
+quart_Data <- quantile(COVID_dataSum_country$All)
+
+#color palette function
+pal = colorFactor(palette=c("blue", "gray", "red"), domain=quantile(COVID_dataSum_country$All))
+
 #Generate Map 
 leaflet(COVID_dataSum_country) %>%
   addTiles() %>%
   setView(lng=0, lat=0, zoom=1) %>%
-  addCircleMarkers(lng=~long, lat=~lat, radius=5)
+  addCircleMarkers(lng=~long, lat=~lat, radius=5, label=~Country.Region, popup=~as.character(Deaths)) 
+
+#  addMarkers(lng=~long, lat=~lat, popup=~as.character(Deaths))
+#  addLabelOnlyMarkers(lng=~long, lat=~lat, label=~as.character(Deaths))
+#  addPopups(lng=~long, lat=~lat, ~as.character(All), options = popupOptions(closeButton=TRUE))
+#  addLegend(position="bottomleft" , pal=pal, values=~as.character(All))
 
 
 
