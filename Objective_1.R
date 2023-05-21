@@ -48,17 +48,17 @@ COVID_dataSum <-
   mutate(All_Latest = rowSums(across(c(Latest_Day.x, Latest_Day.y)))) %>%
   rename("Last_Confirm"="Latest_Day.x", "Last_Deaths"="Latest_Day.y") 
 
-#Group by Country. Average latitudes and longitudes. Sum data from countries together.
+#Create dataframe which averages lats and longs, and adds confirmations and deaths.
 COVID_dataSum_country <- 
   group_by(COVID_dataSum, Country.Region) %>%
   summarize(mean(Lat), mean(Long), sum(Last_Confirm), sum(Last_Deaths), sum(All_Latest)) %>%
   rename("lat"="mean(Lat)", "long"="mean(Long)", "Confirmations"="sum(Last_Confirm)", "Deaths"="sum(Last_Deaths)", "All"="sum(All_Latest)")
 
-#Map
+#Generate Map 
 leaflet(COVID_dataSum_country) %>%
   addTiles() %>%
   setView(lng=0, lat=0, zoom=1) %>%
-  addCircleMarkers(~Long, ~Lat, color="red")
+  addCircleMarkers(lng=~long, lat=~lat, radius=5)
 
 
 
