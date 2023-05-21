@@ -107,7 +107,4 @@ leaflet(COVID_dataSum_country) %>%
   
   #popup=paste("Deaths: ", as.character(COVID_dataSum_country$Deaths)), color=~pal(COVID_dataSum_country$All)) 
 
-  
-
-
  
