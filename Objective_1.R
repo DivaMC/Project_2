@@ -48,31 +48,66 @@ COVID_dataSum <-
   mutate(All_Latest = rowSums(across(c(Latest_Day.x, Latest_Day.y)))) %>%
   rename("Last_Confirm"="Latest_Day.x", "Last_Deaths"="Latest_Day.y") 
   
+#remove unnecessary data entries that involve Olympics or unknow origin
 COVID_dataSum <- COVID_dataSum[-c(54, 90, 245, 286),]
 
 #Create dataframe which averages lats and longs, and adds confirmations and deaths.
 COVID_dataSum_country <- 
   group_by(COVID_dataSum, Country.Region) %>%
   summarize(mean(Lat), mean(Long), sum(Last_Confirm), sum(Last_Deaths), sum(All_Latest)) %>%
-  rename("lat"="mean(Lat)", "long"="mean(Long)", "Confirmations"="sum(Last_Confirm)", "Deaths"="sum(Last_Deaths)", "All"="sum(All_Latest)")
+  rename("lat"="mean(Lat)", "long"="mean(Long)", 
+         "Confirmations"="sum(Last_Confirm)", "Deaths"="sum(Last_Deaths)", "All"="sum(All_Latest)")
+  
+#format numeric data to have commas
+COVID_dataSum_country$Confirmations <- prettyNum(COVID_dataSum_country$Confirmations, big.mark=",", scientific = FALSE)
+COVID_dataSum_country$Deaths <- prettyNum(COVID_dataSum_country$Deaths, big.mark=",", scientific = FALSE)
 
-quart_Data <- quantile(COVID_dataSum_country$All)
 
 #color palette function
-pal = colorFactor(palette=c("blue", "gray", "red"), domain=quantile(COVID_dataSum_country$All))
+pal = colorQuantile(palette=c("dodgerblue3", "grey35", "red"), domain=COVID_dataSum_country$All, n=5)
+
 
 #Generate Map 
 leaflet(COVID_dataSum_country) %>%
   addTiles() %>%
   setView(lng=0, lat=0, zoom=1) %>%
-  addCircleMarkers(lng=~long, lat=~lat, radius=5, label=~Country.Region, popup=~as.character(Deaths)) 
+  addCircleMarkers(lng=~long, lat=~lat, radius=4, 
+                   label=~Country.Region, color=~pal(COVID_dataSum_country$All), 
+                   group="Confirmations",
+                   popup=paste("Confirmations: ", as.character(COVID_dataSum_country$Confirmations))) %>%
+  addCircleMarkers(lng=~long, lat=~lat, radius=4, 
+                   label=~Country.Region, color=~pal(COVID_dataSum_country$All), 
+                   group="Deaths",
+                   popup=paste("Deaths: ", as.character(COVID_dataSum_country$Deaths))) %>%
+  addLayersControl(overlayGroups = c("Confirmations", "Deaths"),
+                   options = layersControlOptions(collapsed = FALSE))
+
+
+
+
+
+
+#### Code which did not work
+
+#  addPopups(lng=~long, lat=~lat, 
+#          paste("Confirmations: ", as.character(COVID_dataSum_country$Confirmations)), 
+#          group="Confirmations", 
+#          options = popupOptions(closeButton=TRUE, keepInView = FALSE)) %>%
+#  addPopups(lng=~long, lat=~lat, 
+#            paste("Deaths: ", as.character(COVID_dataSum_country$Deaths)), 
+#            group="Deaths", 
+#            options = popupOptions(closeButton=TRUE, keepInView = FALSE)) 
+
 
 #  addMarkers(lng=~long, lat=~lat, popup=~as.character(Deaths))
 #  addLabelOnlyMarkers(lng=~long, lat=~lat, label=~as.character(Deaths))
 #  addPopups(lng=~long, lat=~lat, ~as.character(All), options = popupOptions(closeButton=TRUE))
 #  addLegend(position="bottomleft" , pal=pal, values=~as.character(All))
+#  addCircleMarkers(lng=~long, lat=~lat, radius=4, label=~Country.Region, 
+  
+  #popup=paste("Deaths: ", as.character(COVID_dataSum_country$Deaths)), color=~pal(COVID_dataSum_country$All)) 
 
-
+  
 
 
  
