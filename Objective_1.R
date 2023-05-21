@@ -34,11 +34,11 @@ confirmed_COVID_global <-
 deaths_COVID_global <- 
   read.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv", stringsAsFactors=FALSE)
 
-#variable holding province names and latest day numbers
+#variable holding dataframe with necessary columns for confirmed
 lastday_confirmed <- 
   select(confirmed_COVID_global, Province.State, Country.Region, Lat, Long, "Latest_Day"=tail(names(confirmed_COVID_global),1))
 
-#variable holding province names and latest day numbers
+#variable holding dataframe with necessary columns for deaths
 lastday_deaths <-
   select(deaths_COVID_global, Province.State, Country.Region, Lat, Long, "Latest_Day"=tail(names(deaths_COVID_global),1))
 
@@ -49,14 +49,17 @@ COVID_dataSum <-
   rename("Last_Confirm"="Latest_Day.x", "Last_Deaths"="Latest_Day.y") 
   
 #remove unnecessary data entries that involve Olympics or unknow origin
-COVID_dataSum <- COVID_dataSum[-c(54, 90, 245, 286),]
+COVID_dataSum <- COVID_dataSum[-c(107, 245, 286),]
 
 #Create dataframe which averages lats and longs, and adds confirmations and deaths.
 COVID_dataSum_country <- 
   group_by(COVID_dataSum, Country.Region) %>%
-  summarize(mean(Lat), mean(Long), sum(Last_Confirm), sum(Last_Deaths), sum(All_Latest)) %>%
-  rename("lat"="mean(Lat)", "long"="mean(Long)", 
-         "Confirmations"="sum(Last_Confirm)", "Deaths"="sum(Last_Deaths)", "All"="sum(All_Latest)")
+  summarize(mean(Lat,na.rm=TRUE), mean(Long,na.rm=TRUE), sum(Last_Confirm), sum(Last_Deaths), sum(All_Latest)) %>% 
+  rename("lat"=2, 
+         "long"=3, 
+         "Confirmations"=4, 
+         "Deaths"=5, 
+         "All"=6)
   
 #format numeric data to have commas
 COVID_dataSum_country$Confirmations <- prettyNum(COVID_dataSum_country$Confirmations, big.mark=",", scientific = FALSE)
@@ -74,7 +77,7 @@ leaflet(COVID_dataSum_country) %>%
   addCircleMarkers(lng=~long, lat=~lat, radius=4, 
                    label=~Country.Region, color=~pal(COVID_dataSum_country$All), 
                    group="Confirmations",
-                   popup=paste("Confirmations: ", as.character(COVID_dataSum_country$Confirmations))) %>%
+                   popup=paste("Confirmed: ", as.character(COVID_dataSum_country$Confirmations))) %>%
   addCircleMarkers(lng=~long, lat=~lat, radius=4, 
                    label=~Country.Region, color=~pal(COVID_dataSum_country$All), 
                    group="Deaths",
