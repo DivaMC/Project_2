@@ -5,39 +5,159 @@ date: "2023-05-20"
 output: html_document
 ---
 
-Objective 1 - Global Map
+```{r libraries, include=FALSE}
+
+library(dplyr)
+library(leaflet)
+library(knitr)
+library(kableExtra)
+library(tidyverse)
+library(tinytex)
+```
+
+### Objective 1 - Global Map
+
 You are tasked to create a world map to gain an appreciation for where the most occurrences of COVID-19 confirmations and deaths are located.
 
 Create this map using leaflet for the most recent date as shown below. For this map, sum the confirmations and deaths of provinces into one value to depict the total number for the country they belong to. When creating a marker for each country in the map, calculate lat and long as the mean values for the provinces that make up each country.
 
-Customize the map to reflect the differences in magnitude for confirmations and deaths. In the example map below, circle markers that are blue represent low values, gray represents neutral values, and red represents high values. Low, middle, and high values were categorized to aesthetically map the markers based on their probabilistic distribution using the quartile function. You may use any method you like so that it is logical and allows visualization of value intensity. As well, customize the map to include hover labels that indicate country names and popup labels to show the value of confirmations and deaths for that country. For extra help using leaflet, consult this website along with the information provided in your textbooks.
+Customize the map to reflect the differences in magnitude for confirmations and deaths. In the example map below, circle markers that are blue represent low values, gray represents neutral values, and red represents high values. Low, middle, and high values were categorized to aesthetically map the markers based on their probabilistic distribution using the quartile function. You may use any method you like so that it is logical and allows visualization of value intensity. As well, customize the map to include hover labels that indicate country names and popup labels to show the value of confirmations and deaths for that country.
+
+```{r map}
+
+#extract data of global confirmed COVID cases
+confirmed_COVID_global <- 
+  read.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv", stringsAsFactors=FALSE)
+
+#extract data of global COVID deaths
+deaths_COVID_global <- 
+  read.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv", stringsAsFactors=FALSE)
+
+#variable holding dataframe with necessary columns for confirmed
+lastday_confirmed <- 
+  select(confirmed_COVID_global, Province.State, Country.Region, Lat, Long, "Latest_Day"=tail(names(confirmed_COVID_global),1))
+
+#variable holding dataframe with necessary columns for deaths
+lastday_deaths <-
+  select(deaths_COVID_global, Province.State, Country.Region, Lat, Long, "Latest_Day"=tail(names(deaths_COVID_global),1))
+
+#Create dataframe containing sum of deaths and confirmations by province
+COVID_dataSum <- 
+  lastday_confirmed %>% inner_join(lastday_deaths, by=c("Province.State", "Country.Region", "Lat", "Long")) %>%
+  mutate(All_Latest = rowSums(across(c(Latest_Day.x, Latest_Day.y)))) %>%
+  rename("Last_Confirm"="Latest_Day.x", "Last_Deaths"="Latest_Day.y") 
+  
+#remove unnecessary data entries that involve Olympics or unknow origin
+COVID_dataSum <- COVID_dataSum[-c(107, 245, 286),]
+
+#Create dataframe which averages lats and longs, and adds confirmations and deaths.
+COVID_dataSum_country <- 
+  group_by(COVID_dataSum, Country.Region) %>%
+  summarize(mean(Lat,na.rm=TRUE), mean(Long,na.rm=TRUE), sum(Last_Confirm), sum(Last_Deaths), sum(All_Latest)) %>% 
+  rename("lat"=2, 
+         "long"=3, 
+         "Confirmations"=4, 
+         "Deaths"=5, 
+         "All"=6)
+  
+#format numeric data to have commas
+COVID_dataSum_country$Confirmations <- prettyNum(COVID_dataSum_country$Confirmations, big.mark=",", scientific = FALSE)
+COVID_dataSum_country$Deaths <- prettyNum(COVID_dataSum_country$Deaths, big.mark=",", scientific = FALSE)
 
 
+#color palette function
+pal = colorQuantile(palette=c("dodgerblue3", "grey35", "red"), domain=COVID_dataSum_country$All, n=5)
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+#Generate Map 
+leaflet(COVID_dataSum_country) %>%
+  addTiles() %>%
+  setView(lng=0, lat=0, zoom=1) %>%
+  addCircleMarkers(lng=~long, lat=~lat, radius=4, 
+                   label=~Country.Region, color=~pal(COVID_dataSum_country$All), 
+                   group="Confirmations",
+                   popup=paste("Confirmed: ", as.character(COVID_dataSum_country$Confirmations))) %>%
+  addCircleMarkers(lng=~long, lat=~lat, radius=4, 
+                   label=~Country.Region, color=~pal(COVID_dataSum_country$All), 
+                   group="Deaths",
+                   popup=paste("Deaths: ", as.character(COVID_dataSum_country$Deaths))) %>%
+  addLayersControl(overlayGroups = c("Confirmations", "Deaths"),
+                   options = layersControlOptions(collapsed = FALSE))
+
+```
+
+### Objective 2 - Narrowing Down Hot Spots
+
+Seeing the global map of COVID-19 cases results in the stark realization that some countries are more affected than others. In order to narrow down your studies, create a table using kable from knitr listing the top countries as far as confirmations and deaths (sum values for provinces of the same country into one value and show the country only). 
+
+
+```{r data_prep}
+
+#extract data of global confirmed COVID cases
+confirmed_COVID_global <- 
+  read.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv", stringsAsFactors=FALSE)
+
+#extract data of global COVID deaths
+deaths_COVID_global <- 
+  read.csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv", stringsAsFactors=FALSE)
+
+#variable holding dataframe with necessary columns for confirmed
+lastday_confirmed <- 
+  select(confirmed_COVID_global, Province.State, Country.Region, 
+         "Latest_Day"=tail(names(confirmed_COVID_global),1))
+
+lastday_confirmed <- lastday_confirmed[-c(107 ,245 ,286),]
+
+#variable holding dataframe with necessary columns for deaths
+lastday_deaths <-
+  select(deaths_COVID_global, Province.State, Country.Region, 
+         "Latest_Day"=tail(names(deaths_COVID_global),1))
+
+#remove unnecesary data points like Olympics and cruise ship.
+lastday_deaths <- lastday_deaths[-c(107 ,245 ,286),]
+
+#Make dataframe for confirmations data. Group by country, sum, add commas to numbers.
+COVID_confirmed <- lastday_confirmed %>%
+  group_by(Country.Region) %>%
+  summarize(sum(Latest_Day)) %>%
+  rename("Counts"="sum(Latest_Day)", "Country"="Country.Region") %>%
+  arrange(desc(Counts))
+
+COVID_confirmed$Counts <- prettyNum(COVID_confirmed$Counts, big.mark = ',', scientific=FALSE)
+
+#Make dataframe for deaths data. Group by country, sum, arrange in desc order, add commas to numbers.
+COVID_deaths <- lastday_deaths %>%
+  group_by(Country.Region) %>%
+  summarize(sum(Latest_Day)) %>%
+  rename("Counts"="sum(Latest_Day)", "Country"="Country.Region") %>%
+  arrange(desc(Counts))
+
+COVID_deaths$Counts <- prettyNum(COVID_deaths$Counts, big.mark = ',', scientific=FALSE)
+
+#Add rank numbers to table, and order columns.
+COVID_confirmed <- COVID_confirmed %>% mutate(Rank = row_number()) 
+
+col_order <- c(3,1,2)
+COVID_confirmed <- COVID_confirmed[, col_order]
+
+```
+
+```{r table}
+#combine confirmations and deaths tables.
+COVID_Table <- cbind(COVID_confirmed, COVID_deaths)
+
+#Format table
+COVID_Table %>%
+  kbl(align=c(rep("r",1), rep("l",1), rep("r",1), rep("l",1), rep("r",1)), 
+      caption = "Table of Top Countries") %>%
+  kable_styling(bootstrap_options = "striped", "responsive",
+                full_width = FALSE) %>%
+  add_header_above(c(" " = 1, "Confirmations" = 2, "Deaths" = 2), font_size="large") %>%
+  scroll_box(width = "800px", height = "550px")
+
 ```
 
 
+##### CSIT-165
+###### 05/21/2023
 
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
