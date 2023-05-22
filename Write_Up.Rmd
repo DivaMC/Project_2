@@ -19,8 +19,9 @@ h4.date { /* Header 4 - and the author and data headers use this too  */
   font-size: 18px;
   text-align: center;
 }
-</style>
 <br>
+</style>
+
 
 
 ```{r libraries, include=FALSE}
@@ -173,6 +174,6 @@ COVID_Table %>%
 ```
 
 
-##### CSIT-165
+##### CSIT-165,
 ###### 05/21/2023
 
