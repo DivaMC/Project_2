@@ -1,9 +1,27 @@
 ---
-title: "Project_2"
-author: "Diva Medina Camp"
-date: "2023-05-20"
+title: "Project 2"
+author: "Diva Medina Camp, Wesley Newcomb."
+date: "2023-05-20<br><br>"
 output: html_document
 ---
+
+<style type="text/css">
+
+h1.title {
+  font-size: 38px;
+  text-align: center;
+}
+h4.author { /* Header 4 - and the author and data headers use this too  */
+    font-size: 18px;
+  text-align: center;
+}
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  font-size: 18px;
+  text-align: center;
+}
+</style>
+<br>
+
 
 ```{r libraries, include=FALSE}
 
@@ -11,7 +29,6 @@ library(dplyr)
 library(leaflet)
 library(knitr)
 library(kableExtra)
-library(tidyverse)
 library(tinytex)
 ```
 
@@ -64,10 +81,8 @@ COVID_dataSum_country <-
 COVID_dataSum_country$Confirmations <- prettyNum(COVID_dataSum_country$Confirmations, big.mark=",", scientific = FALSE)
 COVID_dataSum_country$Deaths <- prettyNum(COVID_dataSum_country$Deaths, big.mark=",", scientific = FALSE)
 
-
 #color palette function
 pal = colorQuantile(palette=c("dodgerblue3", "grey35", "red"), domain=COVID_dataSum_country$All, n=5)
-
 
 #Generate Map 
 leaflet(COVID_dataSum_country) %>%
