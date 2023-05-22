@@ -5,17 +5,20 @@ date: "2023-05-21"
 output: html_document
 ---
 
-###Objective 2 - Narrowing Down Hot Spots
+### Objective 2 - Narrowing Down Hot Spots
 
-Seeing the global map of COVID-19 cases results in the stark realization that some countries are more affected than others. In order to narrow down your studies, create a table using kable from knitr listing the top countries as far as confirmations and deaths (sum values for provinces of the same country into one value and show the country only). Now that we are using RMarkdown to create HTML files, we have much more options for how we display our table. For reference on how to customize tables using knitr, visit this website. Consult the table below for an example of a customized table ranking cases by country. While it is not required to replicate this table exactly, it would be a fantastic challenge to show off your knitr prowess.
+Seeing the global map of COVID-19 cases results in the stark realization that some countries are more affected than others. In order to narrow down your studies, create a table using kable from knitr listing the top countries as far as confirmations and deaths (sum values for provinces of the same country into one value and show the country only). 
 
-
-```{r data_prep, include=FALSE}
+```{r libraries, include=FALSE}
 
 library(dplyr)
 library(knitr)
 library(kableExtra)
+library(tidyverse)
+library(tinytex)
+```
 
+```{r data_prep}
 
 #extract data of global confirmed COVID cases
 confirmed_COVID_global <- 
@@ -45,42 +48,45 @@ COVID_confirmed <- lastday_confirmed %>%
   rename("Counts"="sum(Latest_Day)", "Country"="Country.Region") %>%
   arrange(desc(Counts))
 
+COVID_confirmed$Counts <- prettyNum(COVID_confirmed$Counts, big.mark = ',', scientific=FALSE)
+
 COVID_deaths <- lastday_deaths %>%
   group_by(Country.Region) %>%
   summarize(sum(Latest_Day)) %>%
   rename("Counts"="sum(Latest_Day)", "Country"="Country.Region") %>%
   arrange(desc(Counts))
 
+COVID_deaths$Counts <- prettyNum(COVID_deaths$Counts, big.mark = ',', scientific=FALSE)
+
+COVID_confirmed <- COVID_confirmed %>% mutate(Rank = row_number()) 
+
+col_order <- c(3,1,2)
+COVID_confirmed <- COVID_confirmed[, col_order]
+
 ```
 
 ```{r table}
+COVID_Table <- cbind(COVID_confirmed, COVID_deaths)
 
-
+COVID_Table %>%
+  kbl(align=c(rep("r",1), rep("l",1), rep("r",1), rep("l",1), rep("r",1)), 
+      caption = "Table of Top Countries") %>%
+  kable_styling(bootstrap_options = "striped", "responsive",
+                full_width = FALSE) %>%
+  add_header_above(c(" " = 1, "Confirmations" = 2, "Deaths" = 2)) %>%
+  scroll_box(width = "800px", height = "450px")
 
 ```
 
 
+##### Diva Medina Camp
+###### 05/21/2023
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
-```
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
