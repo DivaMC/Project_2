@@ -609,8 +609,10 @@ lastday_deaths &lt;-
   select(deaths_COVID_global, Province.State, Country.Region, 
          &quot;Latest_Day&quot;=tail(names(deaths_COVID_global),1))
 
+#remove unnecesary data points like Olympics and cruise ship.
 lastday_deaths &lt;- lastday_deaths[-c(107 ,245 ,286),]
 
+#Make dataframe for confirmations data. Group by country, sum, add commas to numbers.
 COVID_confirmed &lt;- lastday_confirmed %&gt;%
   group_by(Country.Region) %&gt;%
   summarize(sum(Latest_Day)) %&gt;%
@@ -619,6 +621,7 @@ COVID_confirmed &lt;- lastday_confirmed %&gt;%
 
 COVID_confirmed$Counts &lt;- prettyNum(COVID_confirmed$Counts, big.mark = &#39;,&#39;, scientific=FALSE)
 
+#Make dataframe for deaths data. Group by country, sum, arrange in desc order, add commas to numbers.
 COVID_deaths &lt;- lastday_deaths %&gt;%
   group_by(Country.Region) %&gt;%
   summarize(sum(Latest_Day)) %&gt;%
@@ -627,20 +630,23 @@ COVID_deaths &lt;- lastday_deaths %&gt;%
 
 COVID_deaths$Counts &lt;- prettyNum(COVID_deaths$Counts, big.mark = &#39;,&#39;, scientific=FALSE)
 
+#Add rank numbers to table, and order columns.
 COVID_confirmed &lt;- COVID_confirmed %&gt;% mutate(Rank = row_number()) 
 
 col_order &lt;- c(3,1,2)
 COVID_confirmed &lt;- COVID_confirmed[, col_order]</code></pre>
-<pre class="r"><code>COVID_Table &lt;- cbind(COVID_confirmed, COVID_deaths)
+<pre class="r"><code>#combine confirmations and deaths tables.
+COVID_Table &lt;- cbind(COVID_confirmed, COVID_deaths)
 
+#Format table
 COVID_Table %&gt;%
   kbl(align=c(rep(&quot;r&quot;,1), rep(&quot;l&quot;,1), rep(&quot;r&quot;,1), rep(&quot;l&quot;,1), rep(&quot;r&quot;,1)), 
       caption = &quot;Table of Top Countries&quot;) %&gt;%
   kable_styling(bootstrap_options = &quot;striped&quot;, &quot;responsive&quot;,
                 full_width = FALSE) %&gt;%
-  add_header_above(c(&quot; &quot; = 1, &quot;Confirmations&quot; = 2, &quot;Deaths&quot; = 2)) %&gt;%
-  scroll_box(width = &quot;800px&quot;, height = &quot;450px&quot;)</code></pre>
-<div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:450px; overflow-x: scroll; width:800px; ">
+  add_header_above(c(&quot; &quot; = 1, &quot;Confirmations&quot; = 2, &quot;Deaths&quot; = 2), font_size=&quot;large&quot;) %&gt;%
+  scroll_box(width = &quot;800px&quot;, height = &quot;550px&quot;)</code></pre>
+<div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:550px; overflow-x: scroll; width:800px; ">
 <table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Table of Top Countries
@@ -649,12 +655,12 @@ Table of Top Countries
 <tr>
 <th style="empty-cells: hide;border-bottom:hidden;position: sticky; top:0; background-color: #FFFFFF;" colspan="1">
 </th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; position: sticky; top:0; background-color: #FFFFFF;" colspan="2">
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; font-size: large;position: sticky; top:0; background-color: #FFFFFF;" colspan="2">
 <div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
 Confirmations
 </div>
 </th>
-<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; position: sticky; top:0; background-color: #FFFFFF;" colspan="2">
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; font-size: large;position: sticky; top:0; background-color: #FFFFFF;" colspan="2">
 <div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
 Deaths
 </div>

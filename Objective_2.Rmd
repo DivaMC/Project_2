@@ -40,8 +40,10 @@ lastday_deaths <-
   select(deaths_COVID_global, Province.State, Country.Region, 
          "Latest_Day"=tail(names(deaths_COVID_global),1))
 
+#remove unnecesary data points like Olympics and cruise ship.
 lastday_deaths <- lastday_deaths[-c(107 ,245 ,286),]
 
+#Make dataframe for confirmations data. Group by country, sum, add commas to numbers.
 COVID_confirmed <- lastday_confirmed %>%
   group_by(Country.Region) %>%
   summarize(sum(Latest_Day)) %>%
@@ -50,6 +52,7 @@ COVID_confirmed <- lastday_confirmed %>%
 
 COVID_confirmed$Counts <- prettyNum(COVID_confirmed$Counts, big.mark = ',', scientific=FALSE)
 
+#Make dataframe for deaths data. Group by country, sum, arrange in desc order, add commas to numbers.
 COVID_deaths <- lastday_deaths %>%
   group_by(Country.Region) %>%
   summarize(sum(Latest_Day)) %>%
@@ -58,6 +61,7 @@ COVID_deaths <- lastday_deaths %>%
 
 COVID_deaths$Counts <- prettyNum(COVID_deaths$Counts, big.mark = ',', scientific=FALSE)
 
+#Add rank numbers to table, and order columns.
 COVID_confirmed <- COVID_confirmed %>% mutate(Rank = row_number()) 
 
 col_order <- c(3,1,2)
@@ -66,15 +70,17 @@ COVID_confirmed <- COVID_confirmed[, col_order]
 ```
 
 ```{r table}
+#combine confirmations and deaths tables.
 COVID_Table <- cbind(COVID_confirmed, COVID_deaths)
 
+#Format table
 COVID_Table %>%
   kbl(align=c(rep("r",1), rep("l",1), rep("r",1), rep("l",1), rep("r",1)), 
       caption = "Table of Top Countries") %>%
   kable_styling(bootstrap_options = "striped", "responsive",
                 full_width = FALSE) %>%
-  add_header_above(c(" " = 1, "Confirmations" = 2, "Deaths" = 2)) %>%
-  scroll_box(width = "800px", height = "450px")
+  add_header_above(c(" " = 1, "Confirmations" = 2, "Deaths" = 2), font_size="large") %>%
+  scroll_box(width = "800px", height = "550px")
 
 ```
 
