@@ -22,7 +22,7 @@
 #customize the map to include hover labels that indicate country names 
 #and popup labels to show the value of confirmations and deaths for that country. 
 
-
+library(plyr)
 library(dplyr)
 library(leaflet)
 
@@ -36,17 +36,16 @@ deaths_COVID_global <-
 
 #variable holding dataframe with necessary columns for confirmed
 lastday_confirmed <- 
-  select(confirmed_COVID_global, Province.State, Country.Region, Lat, Long, "Latest_Day"=tail(names(confirmed_COVID_global),1))
+  select(confirmed_COVID_global, Province.State, Country.Region, Lat, Long, "Confirmations"=tail(names(confirmed_COVID_global),1))
 
 #variable holding dataframe with necessary columns for deaths
 lastday_deaths <-
-  select(deaths_COVID_global, Province.State, Country.Region, Lat, Long, "Latest_Day"=tail(names(deaths_COVID_global),1))
+  select(deaths_COVID_global, Province.State, Country.Region, Lat, Long, "Deaths"=tail(names(deaths_COVID_global),1))
 
 #Create dataframe containing sum of deaths and confirmations by province
-COVID_dataSum <- 
-  lastday_confirmed %>% inner_join(lastday_deaths, by=c("Province.State", "Country.Region", "Lat", "Long")) %>%
-  mutate(All_Latest = rowSums(across(c(Latest_Day.x, Latest_Day.y)))) %>%
-  rename("Last_Confirm"="Latest_Day.x", "Last_Deaths"="Latest_Day.y") 
+COVID_dataSum <- lastday_confirmed %>% 
+  inner_join(lastday_deaths, by=c("Province.State", "Country.Region", "Lat", "Long")) %>%
+  mutate(All = rowSums(select(., "Confirmations", "Deaths")))
   
 #remove unnecessary data entries that involve Olympics or unknow origin
 COVID_dataSum <- COVID_dataSum[-c(107, 245, 286),]
@@ -54,12 +53,11 @@ COVID_dataSum <- COVID_dataSum[-c(107, 245, 286),]
 #Create dataframe which averages lats and longs, and adds confirmations and deaths.
 COVID_dataSum_country <- 
   group_by(COVID_dataSum, Country.Region) %>%
-  summarize(mean(Lat,na.rm=TRUE), mean(Long,na.rm=TRUE), sum(Last_Confirm), sum(Last_Deaths), sum(All_Latest)) %>% 
-  rename("lat"=2, 
-         "long"=3, 
-         "Confirmations"=4, 
-         "Deaths"=5, 
-         "All"=6)
+  summarize(Lat = mean(Lat,na.rm=TRUE), 
+            Long = mean(Long,na.rm=TRUE), 
+            Confirmations = sum(Confirmations), 
+            Deaths = sum(Deaths), 
+            All = sum(All))
   
 #format numeric data to have commas
 COVID_dataSum_country$Confirmations <- prettyNum(COVID_dataSum_country$Confirmations, big.mark=",", scientific = FALSE)
@@ -74,11 +72,11 @@ pal = colorQuantile(palette=c("dodgerblue3", "grey35", "red"), domain=COVID_data
 leaflet(COVID_dataSum_country) %>%
   addTiles() %>%
   setView(lng=0, lat=0, zoom=1) %>%
-  addCircleMarkers(lng=~long, lat=~lat, radius=4, 
+  addCircleMarkers(lng=~Long, lat=~Lat, radius=4, 
                    label=~Country.Region, color=~pal(COVID_dataSum_country$All), 
                    group="Confirmations",
                    popup=paste("Confirmed: ", as.character(COVID_dataSum_country$Confirmations))) %>%
-  addCircleMarkers(lng=~long, lat=~lat, radius=4, 
+  addCircleMarkers(lng=~Long, lat=~Lat, radius=4, 
                    label=~Country.Region, color=~pal(COVID_dataSum_country$All), 
                    group="Deaths",
                    popup=paste("Deaths: ", as.character(COVID_dataSum_country$Deaths))) %>%

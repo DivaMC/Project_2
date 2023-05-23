@@ -190,3 +190,5 @@ COVID_Table %>%
   scroll_box(width = "800px", height = "550px")
 
 ```
+
+##### CSIT-165, Spring 2023.
